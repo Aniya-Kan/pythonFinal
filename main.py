@@ -1,5 +1,6 @@
 import pygame
 import sys
+import time
 
 # === Настройки ===
 WIDTH, HEIGHT = 1000, 600
@@ -25,6 +26,7 @@ GREEN = (0, 200, 0)
 RED = (200, 0, 0)
 BLACK = (0, 0, 0)
 YELLOW = (255, 255, 0)
+ORANGE = (255, 165, 0)
 
 # === Игрок ===
 class Player:
@@ -140,165 +142,127 @@ class Portal:
     def draw(self, surface):
         pygame.draw.rect(surface, BLACK, self.rect, border_radius=10)
 
-# === Уровни ================================ДАНИ==========================
+class Carrot:
+    def __init__(self, x, y):
+        self.rect = pygame.Rect(x, y, 20, 30)
+        self.collected = False
+    def draw(self, surface):
+        if not self.collected:
+            pygame.draw.ellipse(surface, ORANGE, self.rect)
+
+# === Уровни ===
 levels = [
     {
-        "platforms": [
-            (0, HEIGHT - 40, WIDTH, 40),
-            (300, 500, 200, 20),
-            (600, 400, 200, 20),
-            (850, 300, 100, 20),
-        ],
-        "spikes": [
-            (500, HEIGHT - 80),
-            (540, HEIGHT - 80)
-        ],
+        "platforms": [(0, HEIGHT - 40, WIDTH, 40), (300, 500, 200, 20), (600, 400, 200, 20), (850, 300, 100, 20)],
+        "spikes": [(500, HEIGHT - 80), (540, HEIGHT - 80)],
         "portal": (900, 220),
-        "start_pos": ((100, 100), (150, 100))
+        "start_pos": ((100, 100), (150, 100)),
+        "carrots": []
     },
     {
-        "platforms": [
-            (0, HEIGHT - 40, WIDTH, 40),
-            (200, 450, 150, 20),
-            (400, 350, 150, 20),
-            (600, 250, 150, 20),
-        ],
+        "platforms": [(0, HEIGHT - 40, WIDTH, 40), (200, 450, 150, 20), (400, 350, 150, 20), (600, 250, 150, 20)],
         "spikes": [(450, HEIGHT - 80)],
         "portal": (700, 170),
-        "start_pos": ((100, 100), (150, 100))
+        "start_pos": ((100, 100), (150, 100)),
+        "carrots": [(220, 420), (450, 320)]
     },
     {
-        "platforms": [
-            (0, HEIGHT - 40, WIDTH, 40),
-            (100, 500, 100, 20),
-            (300, 450, 100, 20),
-            (500, 400, 100, 20),
-            (700, 350, 100, 20),
-        ],
+        "platforms": [(0, HEIGHT - 40, WIDTH, 40), (100, 500, 100, 20), (300, 450, 100, 20), (500, 400, 100, 20), (700, 350, 100, 20)],
         "spikes": [(400, HEIGHT - 80), (440, HEIGHT - 80)],
         "portal": (800, 270),
-        "start_pos": ((50, 100), (100, 100))
+        "start_pos": ((50, 100), (100, 100)),
+        "carrots": [(130, 470), (530, 370)]
     },
     {
-        "platforms": [
-            (0, HEIGHT - 40, WIDTH, 40),
-            (150, 500, 700, 20),
-            (200, 400, 100, 20),
-            (500, 300, 100, 20),
-            (800, 200, 100, 20),
-        ],
+        "platforms": [(0, HEIGHT - 40, WIDTH, 40), (150, 500, 700, 20), (200, 400, 100, 20), (500, 300, 100, 20), (800, 200, 100, 20)],
         "spikes": [(600, HEIGHT - 80)],
         "portal": (850, 120),
-        "start_pos": ((60, 100), (110, 100))
+        "start_pos": ((60, 100), (110, 100)),
+        "carrots": [(180, 470), (820, 170)]
     },
     {
-        "platforms": [
-            (0, HEIGHT - 40, WIDTH, 40),
-            (250, 500, 100, 20),
-            (400, 450, 100, 20),
-            (550, 400, 100, 20),
-            (700, 350, 100, 20),
-        ],
+        "platforms": [(0, HEIGHT - 40, WIDTH, 40), (250, 500, 100, 20), (400, 450, 100, 20), (550, 400, 100, 20), (700, 350, 100, 20)],
         "spikes": [(350, HEIGHT - 80), (750, HEIGHT - 80)],
         "portal": (800, 270),
-        "start_pos": ((90, 100), (140, 100))
+        "start_pos": ((90, 100), (140, 100)),
+        "carrots": [(270, 470), (580, 370)]
     },
     {
-        "platforms": [
-            (0, HEIGHT - 40, WIDTH, 40),
-            (200, 500, 100, 20),
-            (350, 400, 100, 20),
-            (500, 300, 100, 20),
-            (650, 200, 100, 20),
-        ],
+        "platforms": [(0, HEIGHT - 40, WIDTH, 40), (200, 500, 100, 20), (350, 400, 100, 20), (500, 300, 100, 20), (650, 200, 100, 20)],
         "spikes": [(450, HEIGHT - 80), (490, HEIGHT - 80)],
         "portal": (700, 120),
-        "start_pos": ((100, 100), (150, 100))
+        "start_pos": ((100, 100), (150, 100)),
+        "carrots": [(220, 470), (530, 270)]
     },
 ]
-#=============================================================================================================================
 
 def load_level(index):
     data = levels[index]
     platforms = [Platform(*p) for p in data["platforms"]]
     spikes = [Spike(*s) for s in data["spikes"]]
     portal = Portal(*data["portal"])
+    carrots = [Carrot(*c) for c in data.get("carrots", [])]
     start_pos = data["start_pos"]
-    return platforms, spikes, portal, start_pos
+    return platforms, spikes, portal, carrots, start_pos
 
-# Контролы игроков
-controls_p1 = {
-    'left': pygame.K_a, 'right': pygame.K_d, 'jump': pygame.K_w,
-    'grab': pygame.K_LSHIFT, 'alt_grab': pygame.K_RETURN, 'down': pygame.K_s
-}
-controls_p2 = {
-    'left': pygame.K_LEFT, 'right': pygame.K_RIGHT, 'jump': pygame.K_UP,
-    'grab': pygame.K_RSHIFT, 'alt_grab': pygame.K_KP_ENTER, 'down': pygame.K_DOWN
-}
+controls_p1 = {'left': pygame.K_a, 'right': pygame.K_d, 'jump': pygame.K_w, 'grab': pygame.K_LSHIFT, 'alt_grab': pygame.K_RETURN, 'down': pygame.K_s}
+controls_p2 = {'left': pygame.K_LEFT, 'right': pygame.K_RIGHT, 'jump': pygame.K_UP, 'grab': pygame.K_RSHIFT, 'alt_grab': pygame.K_KP_ENTER, 'down': pygame.K_DOWN}
 
 def level_selection():
     font = pygame.font.SysFont("Arial", 36)
     levels_text = ["Level 1", "Level 2", "Level 3", "Level 4", "Level 5", "Exit"]
     selected = 0
-
     while True:
         screen.fill(WHITE)
         for i, text in enumerate(levels_text):
             label = font.render(text, True, BLUE if i == selected else BLACK)
             screen.blit(label, (WIDTH // 2 - label.get_width() // 2, 150 + i * 60))
-
         pygame.display.flip()
-
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
+            if event.type == pygame.QUIT: pygame.quit(); sys.exit()
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_UP:
-                    selected = (selected - 1) % len(levels_text)
-                elif event.key == pygame.K_DOWN:
-                    selected = (selected + 1) % len(levels_text)
+                if event.key == pygame.K_UP: selected = (selected - 1) % len(levels_text)
+                elif event.key == pygame.K_DOWN: selected = (selected + 1) % len(levels_text)
                 elif event.key == pygame.K_RETURN:
-                    if selected == len(levels_text) - 1:
-                        pygame.quit()
-                        sys.exit()
-                    else:
-                        return selected
+                    if selected == len(levels_text) - 1: pygame.quit(); sys.exit()
+                    else: return selected
+
+level_stats = []
 
 def show_win_screen():
-    font = pygame.font.SysFont("Arial", 48)
-    label = font.render("Congratulations!! You pass all levels", True, YELLOW)
-    sub_label = pygame.font.SysFont("Arial", 28).render("Press enter to open menu", True, BLACK)
-    
+    font = pygame.font.SysFont("Arial", 36)
+    small_font = pygame.font.SysFont("Arial", 24)
+    screen.fill(WHITE)
+    label = font.render("Congratulations!! You passed all levels", True, YELLOW)
+    screen.blit(label, (WIDTH // 2 - label.get_width() // 2, 60))
+    y = 150
+    for level_num, time_spent, carrots in level_stats:
+        stat_text = f"Level {level_num}: {time_spent} sec, Carrots: {carrots}"
+        stat_label = small_font.render(stat_text, True, BLACK)
+        screen.blit(stat_label, (WIDTH // 2 - stat_label.get_width() // 2, y))
+        y += 40
+    sub_label = small_font.render("Press Enter to return to menu", True, BLACK)
+    screen.blit(sub_label, (WIDTH // 2 - sub_label.get_width() // 2, y + 20))
+    pygame.display.flip()
     while True:
-        screen.fill(WHITE)
-        screen.blit(label, (WIDTH // 2 - label.get_width() // 2, HEIGHT // 2 - 50))
-        screen.blit(sub_label, (WIDTH // 2 - sub_label.get_width() // 2, HEIGHT // 2 + 20))
-        pygame.display.flip()
-
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            elif event.type == pygame.KEYDOWN:
-                return
+            if event.type == pygame.QUIT: pygame.quit(); sys.exit()
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN: return
 
-# === Главный игровой цикл ===
 while True:
     level_index = level_selection()
     while level_index < len(levels):
-        platforms, spikes, portal, (p1_start, p2_start) = load_level(level_index)
+        platforms, spikes, portal, carrots, (p1_start, p2_start) = load_level(level_index)
         player1 = Player(*p1_start, BLUE, controls_p1)
         player2 = Player(*p2_start, PINK, controls_p2)
+        start_time = time.time()
+        collected_carrots = 0
 
         while True:
             screen.fill(WHITE)
             keys = pygame.key.get_pressed()
-
             for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
+                if event.type == pygame.QUIT: pygame.quit(); sys.exit()
 
             player1.update(keys, platforms, player2)
             player2.update(keys, platforms, player1)
@@ -309,22 +273,53 @@ while True:
                     player2.pos = pygame.Vector2(p2_start)
                     player1.vel = player2.vel = pygame.Vector2(0, 0)
 
+            for carrot in carrots:
+                if not carrot.collected and (player1.rect.colliderect(carrot.rect) or player2.rect.colliderect(carrot.rect)):
+                    carrot.collected = True
+                    collected_carrots += 1
+
             if portal.rect.colliderect(player1.rect) and portal.rect.colliderect(player2.rect):
+                elapsed = round(time.time() - start_time, 2)
+                level_stats.append((level_index + 1, elapsed, collected_carrots))
+
+                # --- Новый экран завершения уровня ---
+                font = pygame.font.SysFont("Arial", 36)
+                small_font = pygame.font.SysFont("Arial", 24)
+                screen.fill(WHITE)
+
+                label = font.render(f"Level {level_index + 1} Complete!", True, GREEN)
+                screen.blit(label, (WIDTH // 2 - label.get_width() // 2, 100))
+
+                time_label = small_font.render(f"Time: {elapsed} sec", True, BLACK)
+                screen.blit(time_label, (WIDTH // 2 - time_label.get_width() // 2, 180))
+
+                carrot_label = small_font.render(f"Carrots collected: {collected_carrots}", True, BLACK)
+                screen.blit(carrot_label, (WIDTH // 2 - carrot_label.get_width() // 2, 220))
+
+                next_label = small_font.render("Press Enter to continue", True, BLACK)
+                screen.blit(next_label, (WIDTH // 2 - next_label.get_width() // 2, 280))
+
+                pygame.display.flip()
+
+                waiting = True
+                while waiting:
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            pygame.quit(); sys.exit()
+                        elif event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+                            waiting = False
+
                 level_index += 1
-                break  # Переход к следующему уровню
+                break
 
-
-            for platform in platforms:
-                platform.draw(screen)
-            for spike in spikes:
-                spike.draw(screen)
+            for platform in platforms: platform.draw(screen)
+            for spike in spikes: spike.draw(screen)
+            for carrot in carrots: carrot.draw(screen)
             portal.draw(screen)
-
             player1.draw(screen)
             player2.draw(screen)
 
             pygame.display.flip()
             clock.tick(FPS)
 
-    # Если вышли за пределы уровней — показать экран победы и вернуться к выбору
     show_win_screen()
