@@ -31,15 +31,15 @@ ORANGE = (255, 165, 0)
 # Функция для воспроизведения музыки
 def play_background_music():
     try:
-        pygame.mixer.init()  # Инициализируем pygame mixer
-        pygame.mixer.music.load("background_music.mp3")  # Загружаем файл музыки
-        pygame.mixer.music.set_volume(0.5)  # Настроим громкость
-        pygame.mixer.music.play(-1)  # Проигрываем музыку бесконечно
+        pygame.mixer.init()
+        pygame.mixer.music.load("background_music.mp3")
+        pygame.mixer.music.set_volume(0.5)
+        pygame.mixer.music.play(-1)
         print("🎵 Музыка воспроизводится.")
     except pygame.error as e:
         print(f"⚠️ Ошибка при загрузке или воспроизведении музыки: {e}")
 
-play_background_music()  # Запуск музыки
+play_background_music()
 
 # === Игрок ===
 class Player:
@@ -179,7 +179,27 @@ levels = [
         "start_pos": ((100, 100), (150, 100)),
         "carrots": [(220, 420), (450, 320)]
     },
-    # Добавьте остальные уровни по аналогии
+    {
+        "platforms": [(0, HEIGHT - 40, WIDTH, 40), (250, 500, 100, 20), (400, 400, 100, 20), (550, 300, 100, 20)],
+        "spikes": [(350, HEIGHT - 80), (750, HEIGHT - 80)],
+        "portal": (600, 220),
+        "start_pos": ((50, 100), (100, 100)),
+        "carrots": [(270, 470), (420, 370)]
+    },
+    {
+        "platforms": [(0, HEIGHT - 40, WIDTH, 40), (100, 450, 100, 20), (250, 350, 100, 20), (400, 250, 100, 20)],
+        "spikes": [(150, HEIGHT - 80)],
+        "portal": (420, 170),
+        "start_pos": ((50, 100), (100, 100)),
+        "carrots": [(120, 420), (270, 320)]
+    },
+    {
+        "platforms": [(0, HEIGHT - 40, WIDTH, 40), (300, 500, 400, 20), (800, 400, 100, 20)],
+        "spikes": [(600, HEIGHT - 80), (650, HEIGHT - 80)],
+        "portal": (850, 320),
+        "start_pos": ((100, 100), (150, 100)),
+        "carrots": [(320, 470), (820, 370)]
+    }
 ]
 
 def load_level(index):
@@ -268,30 +288,23 @@ while True:
                 elapsed = round(time.time() - start_time, 2)
                 level_stats.append((level_index + 1, elapsed, collected_carrots))
 
-                # --- Новый экран завершения уровня ---
                 font = pygame.font.SysFont("Arial", 36)
                 small_font = pygame.font.SysFont("Arial", 24)
                 screen.fill(WHITE)
-
                 label = font.render(f"Level {level_index + 1} Complete!", True, GREEN)
                 screen.blit(label, (WIDTH // 2 - label.get_width() // 2, 100))
-
                 time_label = small_font.render(f"Time: {elapsed} sec", True, BLACK)
                 screen.blit(time_label, (WIDTH // 2 - time_label.get_width() // 2, 180))
-
                 carrot_label = small_font.render(f"Carrots collected: {collected_carrots}", True, BLACK)
                 screen.blit(carrot_label, (WIDTH // 2 - carrot_label.get_width() // 2, 220))
-
                 next_label = small_font.render("Press Enter to continue", True, BLACK)
                 screen.blit(next_label, (WIDTH // 2 - next_label.get_width() // 2, 280))
-
                 pygame.display.flip()
 
                 waiting = True
                 while waiting:
                     for event in pygame.event.get():
-                        if event.type == pygame.QUIT:
-                            pygame.quit(); sys.exit()
+                        if event.type == pygame.QUIT: pygame.quit(); sys.exit()
                         elif event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
                             waiting = False
 
